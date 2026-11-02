@@ -6,6 +6,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
+    // Find HTML elements using their IDs
     const getElement = (...ids) => {
         for (const id of ids) {
             const element = document.getElementById(id);
@@ -51,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "resultContainer"
     );
 
-    // Create a result container if the HTML does not have one.
+    // Results output container
     let output = getElement("aiResults", "aiOutput");
 
     if (!output && resultsContainer) {
@@ -60,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resultsContainer.appendChild(output);
     }
 
-    // Utility: safely display text
+    // Escape HTML to prevent unsafe HTML insertion
     function escapeHTML(value) {
         return String(value ?? "").replace(/[&<>"']/g, char => ({
             "&": "&amp;",
@@ -71,6 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
         })[char]);
     }
 
+    // Display status messages
     function showMessage(message, type = "info") {
         let messageBox = getElement("statusMessage");
 
@@ -83,10 +85,15 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        messageBox.textContent = message;
-        messageBox.className = "status-message " + type;
+        if (messageBox) {
+            messageBox.textContent = message;
+            messageBox.className = "status-message " + type;
+        }
+
+        console.log(`[${type.toUpperCase()}] ${message}`);
     }
 
+    // Loading indicator
     function showLoading() {
         if (analyzeButton) {
             analyzeButton.disabled = true;
@@ -106,6 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
         showMessage("Please wait while Gemini analyzes your resume.");
     }
 
+    // Restore button
     function hideLoading() {
         if (analyzeButton) {
             analyzeButton.disabled = false;
@@ -113,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Convert an array into safe HTML list items
+    // Create safe list items
     function makeList(items) {
         if (!Array.isArray(items) || items.length === 0) {
             return "<li>No information provided.</li>";
@@ -124,8 +132,9 @@ document.addEventListener("DOMContentLoaded", () => {
         ).join("");
     }
 
-    // Display Gemini results
+    // Display analysis results
     function displayResults(data) {
+
         if (!output) {
             showMessage(
                 "Analysis completed, but the HTML results container is missing.",
@@ -136,7 +145,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const score = Math.max(
             0,
-            Math.min(100, Number(data.match_score ?? data.ats_score ?? 0))
+            Math.min(
+                100,
+                Number(data.match_score ?? data.ats_score ?? 0)
+            )
         );
 
         const summary = data.professional_summary || "";
@@ -158,11 +170,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 <div class="score-card">
                     <h3>Resume Match Score</h3>
-                    <div class="score-number">${score}<small>/100</small></div>
+
+                    <div class="score-number">
+                        ${score}<small>/100</small>
+                    </div>
+
                     <div class="score-track">
                         <div class="score-fill"
-                             style="width:${score}%"></div>
+                             style="width:${score}%">
+                        </div>
                     </div>
+
                     <p>Estimated match based on the supplied job description.</p>
                 </div>
 
@@ -193,10 +211,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 <div class="result-section">
                     <h3>📄 Improved Resume</h3>
-                    <pre id="improvedResumeText">${escapeHTML(improvedResume || "No improved resume returned.")}</pre>
+
+                    <pre id="improvedResumeText">${escapeHTML(
+                        improvedResume || "No improved resume returned."
+                    )}</pre>
+
                     <button type="button" id="copyResumeBtn">
                         Copy Improved Resume
                     </button>
+
                     <button type="button" id="downloadResumeBtn">
                         Download Resume TXT
                     </button>
@@ -212,18 +235,26 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
         `;
 
+        // Copy improved resume
         const copyButton = getElement("copyResumeBtn");
         const downloadButton = getElement("downloadResumeBtn");
 
         copyButton?.addEventListener("click", async () => {
             try {
                 await navigator.clipboard.writeText(improvedResume);
-                showMessage("Improved resume copied successfully.", "success");
-            } catch {
-                showMessage("Could not copy. Please select and copy the text manually.", "error");
+                showMessage(
+                    "Improved resume copied successfully.",
+                    "success"
+                );
+            } catch (error) {
+                showMessage(
+                    "Could not copy. Please select and copy the text manually.",
+                    "error"
+                );
             }
         });
 
+        // Download improved resume
         downloadButton?.addEventListener("click", () => {
             const blob = new Blob([improvedResume], {
                 type: "text/plain;charset=utf-8"
@@ -234,12 +265,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
             link.href = url;
             link.download = "Improved_Resume.txt";
+            document.body.appendChild(link);
             link.click();
+            link.remove();
 
             URL.revokeObjectURL(url);
         });
 
-        showMessage("Resume analysis completed successfully!", "success");
+        showMessage(
+            "Resume analysis completed successfully!",
+            "success"
+        );
 
         output.scrollIntoView({
             behavior: "smooth",
@@ -247,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Call the Vercel backend
+    // Analyze resume using the Vercel backend
     async function analyzeResume() {
 
         if (!resumeInput) {
@@ -270,6 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        // Prepare request data
         const requestData = {
             resume: resume,
             jobDescription: jobDescription,
@@ -290,6 +327,8 @@ document.addEventListener("DOMContentLoaded", () => {
         showLoading();
 
         try {
+
+            // Send request to Vercel API
             const response = await fetch("/api/analyze", {
                 method: "POST",
                 headers: {
@@ -298,31 +337,54 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: JSON.stringify(requestData)
             });
 
-            // Read response as text first so HTML errors do not cause
-            // an unexplained JSON parsing exception.
+            // Read response
+            const contentType =
+                response.headers.get("content-type") || "";
+
             const responseText = await response.text();
 
+            // Diagnostic information for browser console
+            console.log("API URL:", response.url);
+            console.log("HTTP Status:", response.status);
+            console.log("Content Type:", contentType);
+            console.log(
+                "API Response:",
+                responseText.substring(0, 1000)
+            );
+
+            // Detect HTML or other non-JSON responses
+            if (!contentType.toLowerCase().includes("application/json")) {
+
+                throw new Error(
+                    `Vercel returned a non-JSON response (HTTP ${response.status}). Check Vercel Function Logs.`
+                );
+            }
+
+            // Parse JSON
             let data;
 
             try {
                 data = JSON.parse(responseText);
-            } catch {
+            } catch (error) {
                 throw new Error(
-                    "Vercel returned HTML instead of JSON. Check whether api/analyze.js is deployed."
+                    "The API returned invalid JSON. Check Vercel Function Logs."
                 );
             }
 
+            // Handle backend errors
             if (!response.ok) {
                 throw new Error(
                     data.error ||
                     data.detail ||
-                    "The server could not analyze your resume."
+                    `Server error: HTTP ${response.status}`
                 );
             }
 
+            // Display successful results
             displayResults(data);
 
         } catch (error) {
+
             console.error("Resume Analyzer Error:", error);
 
             if (output) {
@@ -330,7 +392,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="error-card">
                         <h3>Analysis Failed</h3>
                         <p>${escapeHTML(error.message)}</p>
-                        <p>Check your Vercel deployment and Gemini API configuration.</p>
+                        <p>
+                            Check your Vercel deployment,
+                            API configuration and Gemini API settings.
+                        </p>
                     </div>
                 `;
             }
@@ -342,14 +407,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Connect the Analyze button
+    // Connect Analyze button
     if (analyzeButton) {
         analyzeButton.addEventListener("click", analyzeResume);
     } else {
-        console.error("Analyze button not found. Check its HTML ID.");
+        console.error(
+            "Analyze button not found. Check its HTML ID."
+        );
     }
 
-    // Also support form submission
+    // Support form submission
     const resumeForm = getElement("resumeForm", "analyzeForm");
 
     if (resumeForm) {
@@ -360,4 +427,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     console.log("GlobalResume AI script loaded successfully.");
+
 });
