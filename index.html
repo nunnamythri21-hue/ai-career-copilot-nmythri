@@ -1,0 +1,203 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GlobalResume AI | Multilingual Resume Assistant</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+    <a class="brand" href="/">
+        <span class="brand-icon">G</span>
+        <span>GlobalResume <b>AI</b></span>
+    </a>
+    <span class="top-label">✦ Powered by Gemini</span>
+</header>
+
+<main>
+    <section class="hero">
+        <span class="eyebrow">YOUR GLOBAL CAREER PARTNER</span>
+        <h1>Every Language.<br><span>One Professional Resume.</span></h1>
+        <p>Translate, improve and analyze your resume with the power of AI.</p>
+    </section>
+
+    <section class="workspace">
+
+        <div class="panel input-panel">
+            <div class="panel-heading">
+                <div>
+                    <span class="step">STEP 01</span>
+                    <h2>Your Resume</h2>
+                </div>
+                <span class="heading-icon">📄</span>
+            </div>
+
+            <label class="upload-box" for="resumeFile">
+                <span class="upload-icon">☁</span>
+                <strong>Choose your resume</strong>
+                <span>PDF, DOCX or TXT · Maximum 5 MB</span>
+                <input type="file" id="resumeFile"
+                       accept=".pdf,.docx,.txt">
+            </label>
+
+            <p id="fileName" class="file-name">No file selected</p>
+
+            <div class="separator"><span>OR PASTE YOUR RESUME</span></div>
+
+            <label for="resumeText">Resume content</label>
+            <textarea id="resumeText" rows="8"
+                placeholder="Paste your resume in English, Telugu, Hindi or another language..."></textarea>
+
+            <div class="field-grid">
+                <div>
+                    <label for="sourceLanguage">Resume language</label>
+                    <select id="sourceLanguage">
+                        <option>Auto Detect</option>
+                        <option>English</option>
+                        <option>Telugu</option>
+                        <option>Hindi</option>
+                        <option>Tamil</option>
+                        <option>Kannada</option>
+                        <option>Malayalam</option>
+                        <option>Bengali</option>
+                        <option>Marathi</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="outputLanguage">Output language</label>
+                    <select id="outputLanguage">
+                        <option>English</option>
+                        <option>Telugu</option>
+                        <option>Hindi</option>
+                        <option>Tamil</option>
+                        <option>Kannada</option>
+                        <option>Malayalam</option>
+                        <option>Bengali</option>
+                        <option>Marathi</option>
+                    </select>
+                </div>
+            </div>
+
+            <label for="feedbackLanguage">Feedback language</label>
+            <select id="feedbackLanguage">
+                <option>English</option>
+                <option>Telugu</option>
+                <option>Hindi</option>
+                <option>Tamil</option>
+                <option>Kannada</option>
+                <option>Malayalam</option>
+                <option>Bengali</option>
+                <option>Marathi</option>
+            </select>
+
+            <label for="jobDescription">Job description <span class="optional">Optional</span></label>
+            <textarea id="jobDescription" rows="5"
+                placeholder="Paste the job description to get job-specific feedback..."></textarea>
+
+            <label for="action">Choose an AI action</label>
+            <select id="action">
+                <option value="complete">Complete Resume Improvement</option>
+                <option value="translate">Translate Resume</option>
+                <option value="grammar">Improve Grammar and Clarity</option>
+                <option value="analyze">Analyze Resume</option>
+                <option value="summary">Generate Professional Summary</option>
+            </select>
+
+            <button id="analyzeBtn" class="primary-btn">
+                ✨ Improve My Resume
+            </button>
+
+            <p id="status" class="status" role="status" aria-live="polite"></p>
+            <p class="privacy">🔒 Your resume is processed for this request and is not saved by this demo.</p>
+        </div>
+
+        <div class="panel results-panel">
+            <div class="panel-heading">
+                <div>
+                    <span class="step">STEP 02</span>
+                    <h2>AI Results</h2>
+                </div>
+                <span class="heading-icon">✨</span>
+            </div>
+
+            <div id="emptyState" class="empty-state">
+                <div class="empty-art">🌍</div>
+                <h3>Your improved resume starts here</h3>
+                <p>Upload or paste your resume, select your preferences and let Gemini AI help you.</p>
+                <div class="feature-pills">
+                    <span>Translation</span>
+                    <span>Grammar</span>
+                    <span>Resume Analysis</span>
+                </div>
+            </div>
+
+            <div id="loadingState" class="loading-state hidden">
+                <div class="spinner"></div>
+                <h3>Working on your resume...</h3>
+                <p>Gemini AI is preparing your results.</p>
+            </div>
+
+            <div id="results" class="hidden">
+                <div class="detected-box">
+                    <span>DETECTED LANGUAGE</span>
+                    <strong id="detectedLanguage">—</strong>
+                </div>
+
+                <section class="result-section">
+                    <h3>🌟 Professional Summary</h3>
+                    <div id="professionalSummary" class="result-text"></div>
+                </section>
+
+                <section class="result-section">
+                    <h3>📝 Improved Resume</h3>
+                    <div id="improvedResume" class="result-text preformatted"></div>
+                    <button id="copyBtn" class="secondary-btn">Copy Improved Resume</button>
+                    <button id="downloadBtn" class="secondary-btn">Download as TXT</button>
+                </section>
+
+                <section class="result-section">
+                    <h3>🌐 Translation</h3>
+                    <div id="translatedResume" class="result-text preformatted"></div>
+                </section>
+
+                <section class="result-section">
+                    <h3>💪 Resume Strengths</h3>
+                    <ul id="strengths"></ul>
+                </section>
+
+                <section class="result-section">
+                    <h3>🔧 Grammar and Clarity Improvements</h3>
+                    <ul id="grammarCorrections"></ul>
+                </section>
+
+                <section class="result-section">
+                    <h3>🚀 Suggestions</h3>
+                    <ul id="suggestions"></ul>
+                </section>
+
+                <section class="result-section">
+                    <h3>📊 Job Match Score</h3>
+                    <div class="score-row">
+                        <strong id="matchScore">Not calculated</strong>
+                        <span id="scoreNote">Add a job description for comparison.</span>
+                    </div>
+                </section>
+
+                <button id="newAnalysisBtn" class="primary-btn">Start New Analysis</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <p>GlobalResume AI © 2026 · Your career, without language barriers.</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
