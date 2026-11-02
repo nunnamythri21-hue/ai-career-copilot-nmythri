@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
     if (!apiKey) {
       return res.status(500).json({
-        error: "Gemini API key is missing in Vercel settings."
+        error: "GEMINI_API_KEY is missing in Vercel."
       });
     }
 
@@ -22,20 +22,19 @@ export default async function handler(req, res) {
       outputLanguage,
       feedbackLanguage,
       action
-    } = req.body;
+    } = req.body || {};
 
-    if (!resume || resume.trim().length < 30) {
+    if (!resume || typeof resume !== "string" || resume.trim().length < 30) {
       return res.status(400).json({
         error: "Please provide valid resume content."
       });
     }
 
     const prompt = `
-You are an expert AI resume analyzer and career coach.
+You are an expert resume analyzer and career coach.
 
-Analyze the following resume.
+Analyze this resume:
 
-RESUME:
 ${resume}
 
 JOB DESCRIPTION:
@@ -46,13 +45,7 @@ OUTPUT LANGUAGE: ${outputLanguage || "English"}
 FEEDBACK LANGUAGE: ${feedbackLanguage || "English"}
 ACTION: ${action || "Complete Resume Improvement"}
 
-Rules:
-- Never invent qualifications or work experience.
-- Give specific and useful feedback.
-- Compare against the job description when provided.
-- Return only valid JSON.
-
-Required JSON structure:
+Return only valid JSON using this structure:
 {
   "detected_language": "string",
   "professional_summary": "string",
@@ -63,24 +56,26 @@ Required JSON structure:
   "suggestions": ["string"],
   "match_score": 0
 }
+
+Rules:
+- Do not invent qualifications or experience.
+- Give specific suggestions.
+- Use a match score from 0 to 100.
+- Return valid JSON only.
 `;
 
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" +
-      encodeURIComponent(apiKey),
+      "https://generativelanguage.googleapis.com/v1beta/interactions",
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: prompt }]
-          }],
-          generationConfig: {
-            temperature: 0.3,
-            responseMimeType: "application/json"
-          }
+          model: "gemini-3.8-flash",
+          input: prompt,
+          store: false
         })
       }
     );
@@ -94,7 +89,13 @@ Required JSON structure:
     }
 
     const resultText =
-      data.candidates?.[0]?.content?.parts?.[0]?.text;
+      data.output_text ||
+      data.steps
+        ?.filter(step => step.type === "model_output")
+        .flatMap(step => step.content || [])
+        .filter(item => item.type === "text")
+        .map(item => item.text)
+        .join("\n");
 
     if (!resultText) {
       return res.status(502).json({
@@ -102,23 +103,21 @@ Required JSON structure:
       });
     }
 
-    let result;
+    const cleanedText = resultText
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
 
-    try {
-      result = JSON.parse(resultText);
-    } catch {
-      return res.status(502).json({
-        error: "Gemini returned invalid JSON. Please try again."
-      });
-    }
+    const result = JSON.parse(cleanedText);
 
     return res.status(200).json(result);
 
   } catch (error) {
-    console.error("Resume analysis error:", error);
+    console.error("Gemini error:", error);
 
     return res.status(500).json({
-      error: error.message || "Internal server error."
+      error: error.message || "Resume analysis failed."
     });
   }
 }
