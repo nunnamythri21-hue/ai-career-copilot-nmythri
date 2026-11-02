@@ -75,7 +75,7 @@ Rules:
 - Return valid JSON only. Do not include Markdown code fences.
 `;
 
-    const model = "gemini-2.5-flash";
+    const model = "gemini-3.8-flash";
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
       {
